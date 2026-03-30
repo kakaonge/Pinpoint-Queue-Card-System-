@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PinPoint Queue  Card System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/home.css">
+</head>
+<body>
+
+<div id="login-screen">
+  <img src="https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=2000" class="l-bg-img" alt=""/>
+  
+  <div class="l-box">
+    <div class="l-inner">
+      <div>
+        <div class="l-logo-icon">P</div>
+        <h1 class="l-title">Sign In to PinPoint</h1>
+        <p class="l-sub">Welcome back! Sign in to continue</p>
+      </div>
+
+      <div class="oauth-grid">
+        <button type="button" class="oauth-btn" onclick="showToast('ℹ️','OAuth Demo','Google login mock','blue')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 262">
+            <path fill="#4285f4" d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622l38.755 30.023l2.685.268c24.659-22.774 38.875-56.282 38.875-96.027"></path>
+            <path fill="#34a853" d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055c-34.523 0-63.824-22.773-74.269-54.25l-1.531.13l-40.298 31.187l-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1"></path>
+            <path fill="#fbbc05" d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82c0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602z"></path>
+            <path fill="#eb4335" d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0C79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"></path>
+          </svg>
+          <span>Google</span>
+        </button>
+        <button type="button" class="oauth-btn" onclick="showToast('ℹ️','OAuth Demo','Microsoft login mock','blue')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+            <path fill="#f1511b" d="M121.666 121.666H0V0h121.666z"></path>
+            <path fill="#80cc28" d="M256 121.666H134.335V0H256z"></path>
+            <path fill="#00adef" d="M121.663 256.002H0V134.336h121.663z"></path>
+            <path fill="#fbbc09" d="M256 256.002H134.335V134.336H256z"></path>
+          </svg>
+          <span>Microsoft</span>
+        </button>
+      </div>
+
+      <hr class="l-dashed" />
+
+      <div class="space-y-6">
+        <div class="fg">
+          <label for="lu">Username</label>
+          <input class="inp" type="text" id="lu" value="admin" required />
+        </div>
+
+        <div class="fg">
+          <div class="fg-flex">
+            <label for="lp" style="margin:0;">Password</label>
+            <a href="#" class="l-link" onclick="showToast('🔑','Reset Password','Link sent to email','blue')">Forgot your Password ?</a>
+          </div>
+          <input class="inp" type="password" id="lp" value="admin123" required onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+
+        <button class="lbtn" id="lbtn" onclick="doLogin()">Sign In</button>
+      </div>
+    </div>
+    
+    <div class="l-footer">
+      <p>Don't have an account ? <a href="#" class="l-link px-2" onclick="showToast('👤','Sign Up','Redirecting...','blue')">Create account</a></p>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="s-top">
+      <div class="logo"><span class="ld"></span><span>PinPoint Queue System</span></div>
+      <div class="clock">
+        <div class="clock-t" id="ck-time">00:00:00</div>
+        <div class="clock-d" id="ck-date">— — —</div>
+        <div class="clock-w" id="ck-day">———</div>
+      </div>
+      <div class="rbadge">
+        <div id="rb-ico">🛡</div>
+        <div style="flex:1;"><div class="rb-name" id="rb-name">Admin</div><div class="rb-role" id="rb-role">ADMIN</div></div>
+        <div class="rb-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></div>
+      </div>
+    </div>
+    <div id="sb-nav"></div>
+    <div class="s-bot">
+      <div class="ni" onclick="toggleTheme()" id="theme-nav-btn">
+        <span class="ni-ico" id="theme-icon">🌙</span><span id="theme-label">Toggle Theme</span>
+      </div>
+      <button class="lout" onclick="doLogout()"><span>⎋</span><span>Sign Out</span></button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar"> 
+      <div class="tb-title" id="tb-title">Dashboard</div>
+      <div class="tb-right">
+        <div class="chip live"><span class="cdot"></span>Live</div>
+        <div class="chip admin-c" id="tb-role">Admin</div>
+        <div class="nb" onclick="showToast('🔔','Notifications','No new alerts','blue')">🔔</div>
+      </div>
+    </div>
+
+    <div class="content scroll-sound">
+      
+      <div class="page" id="page-dashboard">
+        <div class="ph"><h2>Operations Dashboard</h2><p>Real-time queue overview across all counters</p></div>
+        <div class="g4" id="d-stats" style="margin-bottom:16px;"></div>
+        <div class="g2" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="sec">Now Serving</div>
+            <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+              <div><div class="qn" id="d-cur">—</div><div style="font-size:12px;color:var(--text2);margin-top:5px;" id="d-cur-svc">No active session</div></div>
+              <div style="flex:1;min-width:120px;background:var(--surface2);border-radius:9px;padding:12px;">
+                <div style="font-size:10px;color:var(--text2);font-family:var(--fm);margin-bottom:3px;">COUNTER</div>
+                <div style="font-family:var(--fm);font-size:17px;" id="d-ctr">—</div>
+                <div style="font-size:10px;color:var(--text2);font-family:var(--fm);margin:7px 0 3px;">NEXT UP</div>
+                <div style="font-family:var(--fm);font-size:17px;color:var(--blue-lt);" id="d-nxt">—</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn bpri bsm" onclick="callNext()">▶ Call Next</button>
+              <button class="btn bghost bsm" onclick="recallCurrent()">↩ Recall</button>
+              <button class="btn bsm bwrn" onclick="skipCurrent()">⤭ Skip</button>
+              <button class="btn bdgr bsm" onclick="resetQueue()">⊘ Reset</button>
+            </div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;max-height:290px;">
+            <div class="sec">Live Queue</div>
+            <div style="overflow-y:auto;flex:1;" id="d-qlist"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <div class="sec" style="margin-bottom:0;">Service Counters</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn bghost bsm" onclick="toggleAll()">Toggle All</button>
+              <button class="btn bpri bsm" onclick="openAddCounter()">＋ Add Counter</button>
+            </div>
+          </div>
+          <div id="d-ctrs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;"></div>
+        </div>
+        <div class="card">
+          <div class="sec">Recent Activity</div>
+          <div class="tw"><table><thead><tr><th>#</th><th>Service</th><th>Counter</th><th>Wait</th><th>Result</th><th>Time</th></tr></thead><tbody id="d-act"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-issue">
+        <div class="ph"><h2>Issue Queue Card</h2><p>Generate a digital queue card for a customer</p></div>
+        <div class="g2">
+          <div class="card">
+            <div class="sec">Card Details</div>
+            <div class="fg"><label>Service Type</label>
+              <select class="inp" id="g-svc">
+                <option>Customer Service</option><option>Billing</option><option>Consultation</option>
+                <option>Technical Support</option><option>Order Pickup</option><option>Account Opening</option>
+              </select></div>
+            <div class="fg"><label>Customer Name</label><input class="inp" type="text" id="g-nm" placeholder="Optional…"/></div>
+            <div class="fg"><label>Priority</label>
+              <select class="inp" id="g-pri">
+                <option>Normal</option><option>VIP</option><option>Elderly / Disability</option><option>Emergency</option>
+              </select></div>
+            <div class="fg"><label>Phone</label><input class="inp" type="tel" id="g-ph" placeholder="+254 700 000 000"/></div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+              <button class="btn bpri" style="flex:1;" onclick="genCard()">⊕ Generate Card</button>
+              <button class="btn bghost" onclick="clrForm()">Clear</button>
+            </div>
+          </div>
+          <div>
+            <div class="sec">Card Preview</div>
+            <div class="qcard">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                <div class="qcbrand">● PINPOINT QUEUE</div><div id="qr-wrap"></div>
+              </div>
+              <div id="pv-num" style="font-family:var(--fm);font-size:56px;font-weight:500;background:linear-gradient(135deg,#58A6FF,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-bottom:12px;">—</div>
+              <div class="qcrow"><span class="qck">SERVICE</span><span class="qcv" id="pv-svc">—</span></div>
+              <div class="qcrow"><span class="qck">COUNTER</span><span class="qcv" id="pv-ctr">Auto-assigned</span></div>
+              <div class="qcrow"><span class="qck">POSITION</span><span class="qcv" id="pv-pos">—</span></div>
+              <div class="qcrow"><span class="qck">EST. WAIT</span><span class="qcv" style="color:var(--amber);" id="pv-wait">—</span></div>
+              <div class="qcrow"><span class="qck">PRIORITY</span><span id="pv-pri">—</span></div>
+              <div class="qcrow"><span class="qck">STATUS</span><span class="b ba" id="pv-st">Waiting</span></div>
+              <div style="font-size:10px;color:var(--text3);font-family:var(--fm);margin-top:8px;" id="pv-time">Issued: —</div>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px;">
+              <button class="btn bghost bsm" onclick="showToast('🖨','Print','Sending to printer…','blue')">🖨 Print</button>
+              <button class="btn bghost bsm" onclick="showToast('📤','Copied','Tracking link copied','blue')">📤 Share</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-staff">
+        <div class="ph"><h2>Staff Control Panel</h2><p>Manage your counter and serve customers</p></div>
+        <div class="g2" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="sec">My Counter</div>
+            <div class="fg"><label>Assigned Counter</label>
+              <select class="inp" id="s-ctr" onchange="updateStaffCounter()"></select></div>
+            <div class="fg"><label>Status</label>
+              <select class="inp" id="s-status" onchange="updStaffStatus()">
+                <option value="open">Open — Accepting</option><option value="break">On Break</option><option value="closed">Closed</option>
+              </select></div>
+            <div class="divider"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn bsuc" style="flex:1;" onclick="callNext()">▶ Call Next</button>
+              <button class="btn bghost bsm" onclick="completeServing()">✓ Done</button>
+              <button class="btn bsm bwrn" onclick="skipCurrent()">⤭ Skip</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="sec">Currently Serving</div>
+            <div style="text-align:center;padding:16px 0;">
+              <div class="qn qnsm" id="s-cur">—</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:5px;" id="s-svc">No active customer</div>
+              <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <button class="btn bsuc bsm" onclick="completeServing()">✓ Complete</button>
+                <button class="btn bsm bwrn" onclick="skipCurrent()">⤭ Skip</button>
+                <button class="btn bghost bsm" onclick="recallCurrent()">↩ Recall</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div class="sec" style="margin-bottom:0;">Full Queue</div>
+            <div class="b bb" id="s-cnt">0 waiting</div>
+          </div>
+          <div class="tw"><table><thead><tr><th>#</th><th>Name</th><th>Service</th><th>Priority</th><th>Wait</th><th>Action</th></tr></thead><tbody id="s-tbl"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-display" style="padding:0;">
+        <div class="dw">
+          <div style="font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:0.2em;color:var(--text3);text-transform:uppercase;margin-bottom:28px;">● PinPoint Queue — Live Display</div>
+          <div class="dl">Now Serving</div>
+          <div class="dn" id="d-now">—</div>
+          <div style="font-size:14px;color:var(--text2);font-family:var(--fm);margin-top:10px;" id="d-svc2">—</div>
+          <div style="font-size:12px;color:var(--blue-lt);font-family:var(--fm);margin-top:4px;" id="d-ctrlbl">—</div>
+          <div class="dr">
+            <div class="dc"><div style="font-size:10px;color:var(--text3);font-family:var(--fm);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Next</div><div style="font-family:var(--fm);font-size:32px;color:var(--blue-lt);" id="d-nxt2">—</div></div>
+            <div class="dc"><div style="font-size:10px;color:var(--text3);font-family:var(--fm);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Waiting</div><div style="font-family:var(--fm);font-size:32px;color:var(--green);" id="d-wt">0</div></div>
+            <div class="dc"><div style="font-size:10px;color:var(--text3);font-family:var(--fm);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Avg Wait</div><div style="font-family:var(--fm);font-size:32px;color:var(--amber);" id="d-avg">—</div></div>
+            <div class="dc"><div style="font-size:10px;color:var(--text3);font-family:var(--fm);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Time</div><div style="font-family:var(--fm);font-size:22px;color:var(--text);" id="d-clk">—</div></div>
+          </div>
+          <div class="dtk" id="d-tks"></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-analytics">
+        <div class="ph"><h2>Analytics & Reports</h2><p>Queue performance and service insights</p></div>
+        
+        
+        <div class="g4" id="an-sts" style="margin-bottom:16px;"></div>
+        <div class="g2" style="margin-bottom:16px;">
+          <div class="card">
+            <div style="margin-bottom:12px;"><div style="font-family:var(--fh);font-size:15px;font-weight:700;">Hourly Traffic</div><div style="font-size:11px;color:var(--text2);">Customers per hour today</div></div>
+            <div class="bars" id="an-bars"></div><div style="display:flex;" id="an-lbls"></div>
+          </div>
+          <div class="card">
+            <div style="margin-bottom:12px;"><div style="font-family:var(--fh);font-size:15px;font-weight:700;">Service Volume</div><div style="font-size:11px;color:var(--text2);">Breakdown by type</div></div>
+            <div id="an-svcs"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="margin-bottom:12px;"><div style="font-family:var(--fh);font-size:15px;font-weight:700;">Counter Performance</div></div>
+          <div class="tw"><table><thead><tr><th>Counter</th><th>Operator</th><th>Served</th><th>Handle Time</th><th>Efficiency</th><th>Status</th></tr></thead><tbody id="an-ctrs"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-services">
+        <div class="ph"><h2>Service &amp; Counter Management</h2><p>Configure service types, counters, and operators</p></div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div style="font-family:var(--fh);font-size:16px;font-weight:700;">Service Counters</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:2px;">Add, edit or remove counters. Click a counter to edit.</div>
+            </div>
+            <button class="btn bpri" onclick="openAddCounter()">＋ Add Counter</button>
+          </div>
+          <div id="svc-counter-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:4px;"></div>
+        </div>
+
+        <div class="g2" style="margin-bottom:16px;" id="svc-grid"></div>
+
+        <div class="card">
+          <div style="margin-bottom:12px;font-family:var(--fh);font-size:15px;font-weight:700;">Counter Summary</div>
+          <div class="tw"><table>
+            <thead><tr><th>Counter</th><th>Service</th><th>Operator</th><th>Status</th><th>Edit</th><th>Remove</th></tr></thead>
+            <tbody id="ctr-tbl"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-get-ticket">
+        <div class="ph"><h2>Get Queue Ticket</h2><p>Select your service and get your number instantly</p></div>
+        <div style="max-width:500px;">
+          <div class="card" style="margin-bottom:16px;">
+            <div class="sec">Choose Service</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;" id="svc-btns"></div>
+            <div class="fg"><label>Your Name</label><input class="inp" type="text" id="c-nm" placeholder="Enter your name…"/></div>
+            <div class="fg"><label>Phone (for alerts)</label><input class="inp" type="tel" id="c-ph" placeholder="+254 700 000 000"/></div>
+            <button class="btn bpri" style="width:100%;margin-top:4px;" onclick="custGetTicket()">Get My Queue Ticket →</button>
+          </div>
+          <div id="c-ticket" style="display:none;">
+            <div class="qcard">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;"><div class="qcbrand">● YOUR QUEUE TICKET</div><div id="c-qr"></div></div>
+              <div id="ct-num" style="font-family:var(--fm);font-size:56px;font-weight:500;background:linear-gradient(135deg,#58A6FF,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-bottom:12px;">—</div>
+              <div class="qcrow"><span class="qck">SERVICE</span><span class="qcv" id="ct-svc">—</span></div>
+              <div class="qcrow"><span class="qck">POSITION</span><span class="qcv" id="ct-pos">—</span></div>
+              <div class="qcrow"><span class="qck">EST. WAIT</span><span class="qcv" style="color:var(--amber);" id="ct-wait">—</span></div>
+              <div class="qcrow"><span class="qck">STATUS</span><span class="b ba">Waiting</span></div>
+              <div style="font-size:10px;color:var(--text3);font-family:var(--fm);margin-top:8px;" id="ct-time">—</div>
+            </div>
+            <button class="btn bghost" style="width:100%;margin-top:8px;" onclick="goTrack()">📍 Track My Position →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-track">
+        <div class="ph"><h2>Track Your Queue</h2><p>Enter your number to see your live position</p></div>
+        <div style="max-width:460px;margin:0 auto;">
+          <div class="card" style="margin-bottom:16px;">
+            <div class="sec">Queue Lookup</div>
+            <div class="fg"><label>Queue Number</label><input class="inp" id="t-inp" type="text" placeholder="e.g. A001" style="font-family:var(--fm);font-size:18px;text-align:center;letter-spacing:3px;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
+            <button class="btn bpri" style="width:100%;" onclick="trackQ()">🔍 Track Position</button>
+          </div>
+          <div id="t-res" style="display:none;">
+            <div class="qcard cpulse">
+              <div class="qcbrand" style="margin-bottom:14px;">● LIVE STATUS</div>
+              <div style="text-align:center;margin-bottom:16px;">
+                <div class="tring" id="t-ring"><span id="t-pos">—</span></div>
+                <div style="font-size:11px;color:var(--text2);" id="t-pos-lbl">Position in queue</div>
+              </div>
+              <div id="t-num" style="font-family:var(--fm);font-size:46px;font-weight:500;background:linear-gradient(135deg,#58A6FF,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;text-align:center;margin-bottom:12px;">—</div>
+              <div class="qcrow"><span class="qck">SERVICE</span><span class="qcv" id="t-svc">—</span></div>
+              <div class="qcrow"><span class="qck">EST. WAIT</span><span class="qcv" style="color:var(--amber);" id="t-wait">—</span></div>
+              <div class="qcrow"><span class="qck">NOW SERVING</span><span class="qcv" style="color:var(--blue-lt);" id="t-now">—</span></div>
+              <div style="margin-top:12px;">
+                <div style="font-size:10px;color:var(--text2);font-family:var(--fm);margin-bottom:5px;">PROGRESS</div>
+                <div class="pw"><div class="pb" id="t-prog" style="width:0%;"></div></div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--fm);margin-top:3px;"><span>Joined</span><span id="t-pct">0%</span></div>
+              </div>
+            </div>
+          </div>
+          <div id="t-nf" style="display:none;text-align:center;padding:36px;color:var(--text2);">
+            <div style="font-size:34px;margin-bottom:10px;">🔎</div><div style="font-weight:700;">Not found</div>
+            <div style="font-size:12px;margin-top:3px;">Check your queue number and try again</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page pub-disp-pg" id="page-public-display" style="padding:0;">
+        <div class="dw">
+        
+          <div style="font-family:var(--fh);font-size:10px;font-weight:700;letter-spacing:0.2em;color:var(--text3);text-transform:uppercase;margin-bottom:28px;margin-top:20px;">● Queue Board</div>
+          <div class="dl">Now Serving</div>
+          <div class="dn" id="pub-now">—</div>
+          <div style="font-size:14px;color:var(--text2);font-family:var(--fm);margin-top:10px;" id="pub-svc">—</div>
+          <div class="dr">
+            <div class="dc"><div style="font-size:10px;color:var(--text3);font-family:var(--fm);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Next</div><div style="font-family:var(--fm);font-size:32px;color:var(--blue-lt);" id="pub-nxt">—</div></div>
+            <div class="dc"><div style="font-size:10px;color:var(--text3);font-family:var(--fm);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Waiting</div><div style="font-family:var(--fm);font-size:32px;color:var(--green);" id="pub-wt">0</div></div>
+            <div class="dc"><div style="font-size:10px;color:var(--text3);font-family:var(--fm);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Time</div><div style="font-family:var(--fm);font-size:22px;color:var(--text);" id="pub-clk">—</div></div>
+          </div>
+          <div class="dtk" id="pub-tks"></div>
+        </div>
+      </div>
+
+    </div></main>
+</div>
+
+<div class="modal-overlay" id="counter-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add New Counter</div>
+      <div class="modal-close" onclick="closeCounterModal()">✕</div>
+    </div>
+    <div class="fg">
+      <label>Counter Name</label>
+      <input class="inp" type="text" id="m-name" placeholder="e.g. Counter 5"/>
+    </div>
+    <div class="fg">
+      <label>Assigned Service</label>
+      <select class="inp" id="m-service">
+        <option>Customer Service</option><option>Billing</option><option>Consultation</option>
+        <option>Technical Support</option><option>Order Pickup</option><option>Account Opening</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Operator Name</label>
+      <input class="inp" type="text" id="m-operator" placeholder="e.g. Jane Doe"/>
+    </div>
+    <div class="fg">
+      <label>Initial Status</label>
+      <select class="inp" id="m-status">
+        <option value="open">Open — Accepting</option>
+        <option value="break">On Break</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Accent Color</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="color-picker">
+        <div class="color-opt" data-c="#388BFD" style="width:28px;height:28px;border-radius:7px;background:#388BFD;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+        <div class="color-opt" data-c="#3FB950" style="width:28px;height:28px;border-radius:7px;background:#3FB950;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+        <div class="color-opt" data-c="#E3B341" style="width:28px;height:28px;border-radius:7px;background:#E3B341;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+        <div class="color-opt" data-c="#F85149" style="width:28px;height:28px;border-radius:7px;background:#F85149;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+        <div class="color-opt" data-c="#A78BFA" style="width:28px;height:28px;border-radius:7px;background:#A78BFA;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+        <div class="color-opt" data-c="#39D353" style="width:28px;height:28px;border-radius:7px;background:#39D353;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+        <div class="color-opt" data-c="#F78166" style="width:28px;height:28px;border-radius:7px;background:#F78166;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+        <div class="color-opt" data-c="#58A6FF" style="width:28px;height:28px;border-radius:7px;background:#58A6FF;cursor:pointer;border:2px solid transparent;transition:all 0.18s;" onclick="pickColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn bghost" onclick="closeCounterModal()">Cancel</button>
+      <button class="btn bpri" id="modal-save-btn" onclick="saveCounter()">＋ Add Counter</button>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirm-modal">
+  <div class="confirm-box">
+    <div style="font-size:28px;margin-bottom:12px;text-align:center;">🗑</div>
+    <div style="font-family:var(--fh);font-size:16px;font-weight:700;text-align:center;margin-bottom:8px;" id="confirm-title">Remove Counter?</div>
+    <div style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px;" id="confirm-msg">This action cannot be undone.</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn bghost" style="flex:1;" onclick="closeConfirm()">Cancel</button>
+      <button class="btn bdgr" style="flex:1;" id="confirm-ok-btn">Remove</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="tico" id="t-ico"></div>
+  <div><div class="tt" id="t-tt"></div><div class="tm" id="t-tm"></div></div>
+</div>
+
+<script src="js/home.js"></script>
+</body>
+</html>
