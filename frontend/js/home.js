@@ -401,18 +401,59 @@ function goTrack(){if(S.myTicket){document.getElementById('t-inp').value=S.myTic
 // ════════════════════════════════════════════════
 // OPERATIONS
 // ════════════════════════════════════════════════
-function callNext(){
-  const w=S.queue.filter(q=>q.status==='waiting');
-  if(!w.length){showToast('ℹ️','Queue Empty','No customers waiting','blue');return;}
-  if(S.currentServing){S.currentServing.status='served';S.servedToday.push({...S.currentServing});addAct(S.currentServing,'Served');}
-  w[0].status='serving';S.currentServing=w[0];
-  renderDash();renderStaff();updateDisps();
-  showToast('📢','Now Calling',`#${w[0].number} — ${w[0].service}`,'green');
+async function callNext() {
+  try {
+    const response = await fetch('http://localhost:5000/api/tickets/call-next', {
+      method: 'PUT'
+    });
+
+    if (response.status === 404) {
+      showToast('ℹ️', 'Queue Empty', 'No customers waiting', 'blue');
+      return;
+    }
+
+    const ticket = await response.json();
+    
+    // Update local state and UI
+    S.currentServing = ticket;
+    renderStaff();
+    renderDash();
+    updateDisps();
+
+    showToast('📢', 'Now Calling', `#${ticket.ticketNumber}`, 'green');
+  } catch (err) {
+    console.error('Failed to call next:', err);
+  }
 }
-function completeServing(){
-  if(!S.currentServing){showToast('ℹ️','No Active','—','blue');return;}
-  S.currentServing.status='served';S.servedToday.push({...S.currentServing});addAct(S.currentServing,'Served');S.currentServing=null;
-  renderDash();renderStaff();updateDisps();showToast('✅','Complete','Service completed','green');
+async function completeServing() {
+  if (!S.currentServing || !S.currentServing._id) {
+    showToast('ℹ️', 'No Active Customer', 'Nothing to complete', 'blue');
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/tickets/complete/${S.currentServing._id}`, {
+      method: 'PUT'
+    });
+
+    const finishedTicket = await response.json();
+
+    // Move to 'servedToday' for local session tracking
+    S.servedToday.push(finishedTicket);
+    addAct(finishedTicket, 'Served');
+    
+    // Clear the current serving slot
+    S.currentServing = null;
+
+    renderDash();
+    renderStaff();
+    updateDisps();
+    showToast('✅', 'Service Complete', `Ticket ${finishedTicket.ticketNumber} finished`, 'green');
+
+  } catch (err) {
+    console.error('Error completing ticket:', err);
+    showToast('❌', 'Error', 'Failed to save completion', 'red');
+  }
 }
 function skipCurrent(){
   if(!S.currentServing){showToast('ℹ️','No Active','—','blue');return;}
@@ -732,3 +773,32 @@ function seedData(){
     S.servedToday.push({number:genNum(sv),service:sv,counter:'Counter '+Math.ceil(Math.random()*4),issuedAt:new Date(),servedAt:new Date()});
   }
 }
+socket.on('ticket-called', (ticket) => {
+  // Remove from waiting list in local state
+  S.queue = S.queue.filter(q => q.number !== ticket.ticketNumber);
+  
+  // Update the currently serving slot
+  S.currentServing = ticket;
+  
+  // Refresh everything
+  renderDash();
+  renderStaff();
+  updateDisps();
+  
+  // Play a chime if you're on the Public Display page
+  if (S.role === 'customer') {
+    const chime = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
+    chime.play().catch(() => {}); // Autoplay might block this
+  }
+});
+socket.on('ticket-completed', (ticket) => {
+  // If this ticket was being shown as 'Now Serving', clear it globally
+  if (S.currentServing && S.currentServing.number === ticket.ticketNumber) {
+    S.currentServing = null;
+  }
+  
+  // Update UI components
+  renderDash();
+  renderStaff();
+  updateDisps();
+});
