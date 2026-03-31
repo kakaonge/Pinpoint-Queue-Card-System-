@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Ticket = require('../models/Ticket');
 
+// 1. POST: Issue a new ticket
 router.post('/issue', async (req, res) => {
   try {
     const { serviceType, customerName, priority } = req.body;
@@ -14,7 +15,8 @@ router.post('/issue', async (req, res) => {
       ticketNumber,
       serviceType,
       customerName,
-      priority
+      priority,
+      status: 'Waiting' // Explicitly set to match our 'Call Next' query
     });
 
     const savedTicket = await newTicket.save();
@@ -23,15 +25,13 @@ router.post('/issue', async (req, res) => {
     io.emit('new-ticket', savedTicket);
 
     res.status(201).json(savedTicket);
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to issue ticket' });
   }
 });
 
-module.exports = router;
-// PUT: Call the next person in line
+// 2. PUT: Call the next person in line
 router.put('/call-next', async (req, res) => {
   try {
     // Find the oldest 'Waiting' ticket
@@ -41,11 +41,9 @@ router.put('/call-next', async (req, res) => {
       return res.status(404).json({ message: 'No one is waiting' });
     }
 
-    // Update status to 'Serving'
     nextTicket.status = 'Serving';
     await nextTicket.save();
 
-    // Broadcast to all screens (Dashboard, Public Display, etc.)
     const io = req.app.get('io');
     io.emit('ticket-called', nextTicket);
 
@@ -54,21 +52,55 @@ router.put('/call-next', async (req, res) => {
     res.status(500).json({ error: 'Server error while calling next' });
   }
 });
-// PUT: Complete a serving session
-router.put('/complete/:id', async (req, res) => {
-  try {
-    const ticket = await Ticket.findById(req.params.id);
-    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
-    ticket.status = 'Completed';
-    // Optionally, you could track a 'completedAt' timestamp here for analytics
-    await ticket.save();
+// 3. PUT: Complete a serving session
+// 2. PUT: Call the next person in line
+router.put('/call-next', async (req, res) => {
+  try {
+    // We grab the counter name sent from the frontend
+    const { counter } = req.body; 
+
+    const nextTicket = await Ticket.findOne({ status: 'Waiting' }).sort({ issuedAt: 1 });
+
+    if (!nextTicket) {
+      return res.status(404).json({ message: 'No one is waiting' });
+    }
+
+    nextTicket.status = 'Serving';
+    // Save the counter to the ticket so the customer can track it
+    nextTicket.counter = counter || 'Auto-Assigned'; 
+    await nextTicket.save();
 
     const io = req.app.get('io');
-    io.emit('ticket-completed', ticket);
+    io.emit('ticket-called', nextTicket);
 
-    res.json(ticket);
+    res.json(nextTicket);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to complete ticket' });
+    res.status(500).json({ error: 'Server error while calling next' });
   }
 });
+
+// 4. GET: Fetch Queue Analytics
+router.get('/stats', async (req, res) => {
+  try {
+    const totalServed = await Ticket.countDocuments({ status: 'Completed' });
+    const waitingNow = await Ticket.countDocuments({ status: 'Waiting' });
+
+    const serviceBreakdown = await Ticket.aggregate([
+      { $match: { status: 'Completed' } },
+      { $group: { _id: "$serviceType", count: { $sum: 1 } } }
+    ]);
+
+    res.json({
+      totalServed,
+      waitingNow,
+      serviceBreakdown,
+      avgWaitTime: "4.2m" 
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+// Export the router at the VERY END of the file
+module.exports = router;

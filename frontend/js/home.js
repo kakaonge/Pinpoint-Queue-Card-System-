@@ -403,8 +403,16 @@ function goTrack(){if(S.myTicket){document.getElementById('t-inp').value=S.myTic
 // ════════════════════════════════════════════════
 async function callNext() {
   try {
+    // Get the currently selected counter from the dropdown
+    const counterSelect = document.getElementById('s-ctr');
+    const selectedCounter = counterSelect && counterSelect.options.length > 0 
+      ? counterSelect.options[counterSelect.selectedIndex].text.split(' — ')[0] 
+      : 'Counter 1';
+
     const response = await fetch('http://localhost:5000/api/tickets/call-next', {
-      method: 'PUT'
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ counter: selectedCounter }) // Send counter to DB
     });
 
     if (response.status === 404) {
@@ -414,13 +422,15 @@ async function callNext() {
 
     const ticket = await response.json();
     
-    // Update local state and UI
+    // Update local state
     S.currentServing = ticket;
-    renderStaff();
+    S.queue = S.queue.filter(q => q.number !== ticket.ticketNumber);
+
+    renderStaff(); 
     renderDash();
     updateDisps();
 
-    showToast('📢', 'Now Calling', `#${ticket.ticketNumber}`, 'green');
+    showToast('📢', 'Now Calling', `#${ticket.ticketNumber} to ${selectedCounter}`, 'green');
   } catch (err) {
     console.error('Failed to call next:', err);
   }
@@ -561,11 +571,27 @@ function toggleAll(){
 // ════════════════════════════════════════════════
 // RENDER STAFF
 // ════════════════════════════════════════════════
-function renderStaff(){
-  const w=S.queue.filter(q=>q.status==='waiting');
-  document.getElementById('s-cnt').textContent=w.length+' waiting';
-  document.getElementById('s-cur').textContent=S.currentServing?S.currentServing.number:'—';
-  document.getElementById('s-svc').textContent=S.currentServing?S.currentServing.service+' — '+S.currentServing.name:'No active customer';
+function renderStaff() {
+  const w = S.queue.filter(q => q.status === 'Waiting' || q.status === 'waiting');
+  document.getElementById('s-cnt').textContent = w.length + ' waiting';
+
+  const curDisplay = document.getElementById('s-cur');
+  const svcDisplay = document.getElementById('s-svc');
+
+  if (S.currentServing) {
+    curDisplay.textContent = S.currentServing.ticketNumber;
+    curDisplay.style.color = "var(--blue-lt)";
+    
+    // Display the Service, Customer Name, AND Counter
+    const custName = S.currentServing.customerName || 'Guest';
+    const counterName = S.currentServing.counter || 'Counter';
+    svcDisplay.innerHTML = `<span style="color:#fff;">${custName}</span> <br/> ${S.currentServing.serviceType} <br/> <span style="color:var(--amber); font-weight:bold;">Please proceed to ${counterName}</span>`;
+  } else {
+    curDisplay.textContent = '—';
+    svcDisplay.textContent = 'No active customer';
+    curDisplay.style.color = "var(--text3)";
+  }
+
   const pc={Normal:'bb',VIP:'ba','Elderly / Disability':'bg',Emergency:'br'};
   document.getElementById('s-tbl').innerHTML=!w.length
     ?`<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:18px;">Queue is empty</td></tr>`
@@ -574,7 +600,7 @@ function renderStaff(){
         <td>${q.name}</td><td>${q.service}</td>
         <td><span class="b ${pc[q.priority]||'bb'}">${q.priority}</span></td>
         <td style="font-family:var(--fm);color:var(--amber);">${q.estimatedWait}m</td>
-        <td><button class="btn bsuc bxs" onclick="callSpec('${q.id}')">Call</button></td>
+        <td><button class="btn bsuc bxs" onclick="callNext()">Call Next</button></td>
       </tr>`).join('');
 }
 function updStaffStatus(){
@@ -587,33 +613,51 @@ function updateStaffCounter(){}
 // ════════════════════════════════════════════════
 // TRACK QUEUE
 // ════════════════════════════════════════════════
-function trackQ(){
-  const num=document.getElementById('t-inp').value.trim().toUpperCase();
-  const res=document.getElementById('t-res'),nf=document.getElementById('t-nf');
-  res.style.display='none';nf.style.display='none';
-  const e=S.queue.find(q=>q.number===num);
-  if(!e){nf.style.display='block';return;}
-  const w=S.queue.filter(q=>q.status==='waiting');
-  const pos=w.indexOf(e)+1;
-  const ring=document.getElementById('t-ring');
-  document.getElementById('t-num').textContent=e.number;
-  document.getElementById('t-svc').textContent=e.service;
-  document.getElementById('t-wait').textContent=e.status==='serving'?'Now!':e.estimatedWait+'m';
-  document.getElementById('t-now').textContent=S.currentServing?S.currentServing.number:'—';
-  if(e.status==='serving'){
-    document.getElementById('t-pos').textContent='NOW';
-    document.getElementById('t-pos-lbl').textContent="You're being served!";
-    ring.className='tring now';
-  } else {
-    document.getElementById('t-pos').textContent=pos||'—';
-    document.getElementById('t-pos-lbl').textContent='Position in queue';
-    ring.className='tring';
+// 🟢 UPDATED: Allows the Guest to track their live status
+function trackQ() {
+  const num = document.getElementById('t-inp').value.trim().toUpperCase();
+  const res = document.getElementById('t-res'), nf = document.getElementById('t-nf');
+  res.style.display = 'none'; nf.style.display = 'none';
+  
+  // Check if it's currently being served
+  if (S.currentServing && S.currentServing.ticketNumber === num) {
+    document.getElementById('t-num').textContent = S.currentServing.ticketNumber;
+    document.getElementById('t-svc').textContent = S.currentServing.serviceType;
+    document.getElementById('t-wait').textContent = 'NOW!';
+    document.getElementById('t-now').textContent = `Go to ${S.currentServing.counter}`;
+    document.getElementById('t-pos').textContent = 'NOW';
+    document.getElementById('t-pos-lbl').textContent = "You're being served!";
+    document.getElementById('t-ring').className = 'tring now';
+    document.getElementById('t-prog').style.width = '100%';
+    document.getElementById('t-pct').textContent = '100% complete';
+    res.style.display = 'block';
+    return;
   }
-  const tot=SEQ[e.service]||1;
-  const pct=Math.min(100,Math.max(5,Math.round(((tot-pos)/tot)*100)));
-  document.getElementById('t-prog').style.width=pct+'%';
-  document.getElementById('t-pct').textContent=pct+'% complete';
-  res.style.display='block';
+
+  // Check if it's in the waiting queue
+  const w = S.queue.filter(q => q.status === 'Waiting' || q.status === 'waiting');
+  const e = w.find(q => q.number === num);
+  
+  if (!e) {
+    nf.style.display = 'block'; // Not found or already completed
+    return;
+  }
+
+  const pos = w.indexOf(e) + 1;
+  document.getElementById('t-num').textContent = e.number;
+  document.getElementById('t-svc').textContent = e.service;
+  document.getElementById('t-wait').textContent = e.estimatedWait + 'm';
+  document.getElementById('t-now').textContent = S.currentServing ? S.currentServing.ticketNumber : '—';
+  
+  document.getElementById('t-pos').textContent = pos;
+  document.getElementById('t-pos-lbl').textContent = 'Position in queue';
+  document.getElementById('t-ring').className = 'tring';
+  
+  const pct = Math.min(100, Math.max(5, Math.round(((w.length - pos + 1) / w.length) * 100)));
+  document.getElementById('t-prog').style.width = pct + '%';
+  document.getElementById('t-pct').textContent = pct + '% complete';
+  
+  res.style.display = 'block';
 }
 
 // ════════════════════════════════════════════════
@@ -642,36 +686,33 @@ function updateDisps(){
 // ════════════════════════════════════════════════
 // ANALYTICS
 // ════════════════════════════════════════════════
-function renderAnalytics(){
-  const w=S.queue.filter(q=>q.status==='waiting');
-  const avg=w.length?Math.round(w.reduce((a,b)=>a+b.estimatedWait,0)/w.length):0;
-  document.getElementById('an-sts').innerHTML=[
-    {ico:'👥',v:w.length,l:'Waiting',c:'var(--blue-lt)'},
-    {ico:'✅',v:S.servedToday.length,l:'Served Today',c:'var(--green)'},
-    {ico:'⏱',v:avg?avg+'m':'—',l:'Avg Wait',c:'var(--amber)'},
-    {ico:'📊',v:w.length+S.servedToday.length,l:'Total Today',c:'var(--purple)'},
-  ].map(s=>`<div class="stat"><div style="font-size:18px;margin-bottom:8px;">${s.ico}</div><div class="sv" style="color:${s.c};">${s.v}</div><div class="sl">${s.l}</div></div>`).join('');
-  const now=new Date().getHours();
-  const hrs=Array.from({length:10},(_,i)=>{const h=Math.max(8,now-9+i);return{h,v:h===now?w.length+S.servedToday.length:Math.max(1,20-Math.abs(h-12)*2+Math.floor(Math.random()*6))};});
-  const mx=Math.max(...hrs.map(x=>x.v));
-  document.getElementById('an-bars').innerHTML=hrs.map(x=>`<div class="bar" style="height:${Math.round((x.v/mx)*84)+3}px;" data-v="${x.v}"></div>`).join('');
-  document.getElementById('an-lbls').innerHTML=hrs.map(x=>`<div class="bl" style="flex:1;">${x.h}</div>`).join('');
-  const sc={};SVCS.forEach(s=>sc[s]=S.queue.filter(q=>q.service===s).length);
-  const ms=Math.max(...Object.values(sc),1);
-  document.getElementById('an-svcs').innerHTML=Object.entries(sc).map(([s,v])=>`
-    <div style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
-        <span>${ICOS[s]} ${s}</span><span style="font-family:var(--fm);color:var(--blue-lt);">${v}</span>
-      </div><div class="pw"><div class="pb" style="width:${Math.round((v/ms)*100)}%;"></div></div>
-    </div>`).join('');
-  const scc={open:'bg',break:'ba',closed:'br'};
-  document.getElementById('an-ctrs').innerHTML=S.counters.map(c=>{
-    const sv=Math.floor(Math.random()*12)+3,ef=Math.min(99,Math.floor(62+Math.random()*34));
-    return `<tr><td style="font-weight:600;">${c.name}</td><td>${c.operator}</td>
-      <td style="font-family:var(--fm);">${sv}</td><td style="font-family:var(--fm);">${Math.floor(Math.random()*4)+3}m</td>
-      <td><div style="display:flex;align-items:center;gap:7px;"><div class="pw" style="flex:1;"><div class="pb" style="width:${ef}%;"></div></div><span style="font-size:10px;font-family:var(--fm);color:var(--blue-lt);">${ef}%</span></div></td>
-      <td><span class="b ${scc[c.status]||'bb'}">${c.status.charAt(0).toUpperCase()+c.status.slice(1)}</span></td></tr>`;
-  }).join('');
+async function renderAnalytics() {
+  try {
+    const response = await fetch('http://localhost:5000/api/tickets/stats');
+    const stats = await response.json();
+
+    // Update the Stat Cards
+    document.getElementById('an-sts').innerHTML = `
+      <div class="stat"><div class="sv" style="color:var(--blue-lt);">${stats.waitingNow}</div><div class="sl">Waiting Now</div></div>
+      <div class="stat"><div class="sv" style="color:var(--green);">${stats.totalServed}</div><div class="sl">Served Today</div></div>
+      <div class="stat"><div class="sv" style="color:var(--amber);">${stats.avgWaitTime}</div><div class="sl">Avg Wait</div></div>
+      <div class="stat"><div class="sv" style="color:var(--purple);">${stats.totalServed + stats.waitingNow}</div><div class="sl">Total Tickets</div></div>
+    `;
+
+    // Update Service Popularity Bars
+    const svcGrid = document.getElementById('an-svcs');
+    svcGrid.innerHTML = stats.serviceBreakdown.map(s => `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+          <span>${s._id}</span><span style="color:var(--blue-lt);">${s.count}</span>
+        </div>
+        <div class="pw"><div class="pb" style="width:${Math.min(100, s.count * 10)}%;"></div></div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error('Analytics Fetch Error:', err);
+  }
 }
 
 // ════════════════════════════════════════════════
